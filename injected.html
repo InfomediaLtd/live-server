@@ -21,8 +21,10 @@
 			var address = protocol + window.location.host + window.location.pathname + '/ws';
 			var socket = new WebSocket(address);
 			socket.onmessage = function(msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
+				if (msg.data == 'reload') {
+					window.location=window.location;
+					// window.location.reload();
+				} else if (msg.data == 'refreshcss') refreshCSS();
 			};
 			console.log('Live reload enabled.');
 		})();

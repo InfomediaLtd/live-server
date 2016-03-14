@@ -30,7 +30,7 @@ function escape(html){
 }
 
 // Based on connect.static(), but streamlined and with added code injecter
-function staticServer(root) {
+function staticServer(root,cachePattern) {
 	return function(req, res, next) {
 		if (req.method !== "GET" && req.method !== "HEAD") return next();
 		var reqpath = url.parse(req.url).pathname;
@@ -46,6 +46,12 @@ function staticServer(root) {
 		}
 
 		function file(filepath, stat) {
+
+			if (cachePattern && filepath.search(cachePattern)>=0) {
+				// console.log("Caching " + filepath);
+				res.setHeader('Cache-Control', "max-age=3600");
+			}
+
 			var x = path.extname(filepath).toLocaleLowerCase(),
 					possibleExtensions = [ "", ".html", ".htm", ".xhtml", ".php", ".svg" ];
 			if (hasNoOrigin && (possibleExtensions.indexOf(x) > -1)) {
@@ -112,6 +118,7 @@ function entryPoint(staticHandler, file) {
  * @param watch {array} Paths to exclusively watch for changes
  * @param ignore {array} Paths to ignore when watching files for changes
  * @param ignorePattern {regexp} Ignore files by RegExp
+ * @param cachePattern {regexp} Cache files by RegExp (defaults to 1 hour)
  * @param open {string} Subpath to open in browser, use false to suppress launch (default: server root)
  * @param mount {array} Mount directories onto a route, e.g. [['/components', './node_modules']].
  * @param logLevel {number} 0 = errors only, 1 = some, 2 = lots
@@ -124,6 +131,7 @@ LiveServer.start = function(options) {
 	var host = options.host || '0.0.0.0';
 	var port = options.port !== undefined ? options.port : 8080; // 0 means random
 	var root = options.root || process.cwd();
+	var cachePattern = options.cachePattern || undefined;
 	var mount = options.mount || [];
 	var watchPaths = options.watch || [root];
 	LiveServer.logLevel = options.logLevel === undefined ? 2 : options.logLevel;
@@ -131,7 +139,7 @@ LiveServer.start = function(options) {
 		"" : ((options.open === null || options.open === false) ? null : options.open);
 	if (options.noBrowser) openPath = null; // Backwards compatibility with 0.7.0
 	var file = options.file;
-	var staticServerHandler = staticServer(root);
+	var staticServerHandler = staticServer(root,cachePattern);
 	var wait = options.wait || 0;
 	var browser = options.browser || null;
 	var htpasswd = options.htpasswd || null;
